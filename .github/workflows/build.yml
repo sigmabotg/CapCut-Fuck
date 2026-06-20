@@ -1,0 +1,33 @@
+name: Build Dylib
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    env:
+      HOMEBREW_NO_REQUIRE_TAP_TRUST: 1
+      THEOS: /Users/runner/work/theos
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          brew install ldid make
+          echo "PATH=/opt/homebrew/opt/make/libexec/gnubin:/opt/homebrew/bin:/usr/local/bin:$PATH" >> $GITHUB_ENV
+
+      - name: Clone Theos
+        run: |
+          git clone --depth 1 --recursive https://github.com/theos/theos.git $THEOS
+          echo "THEOS=$THEOS" >> $GITHUB_ENV
+          echo "$THEOS/bin" >> $GITHUB_PATH
+
+      - name: Build package
+        run: make package FINALPACKAGE=1
+
+      - name: Upload dylib
+        uses: actions/upload-artifact@v4
+        with:
+          name: NoCapCutNotifications
+          path: .theos/obj/**/*.dylib
